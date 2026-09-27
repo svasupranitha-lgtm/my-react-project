@@ -111,3 +111,63 @@ code {
 } */
 
 @import "tailwindcss";
+
+@theme {
+  /* Deep obsidian backgrounds */
+  --color-obsidian-950: #0B0F17;
+  --color-obsidian-900: #111827;
+  --color-obsidian-800: #1F293D;
+
+  /* Cyber-Sanskrit glowing sloka colors */
+  --color-sloka-glow: #FF9E2C;
+  --color-sloka-gold: #F59E0B;
+  --color-sloka-saffron: #EA580C;
+
+  /* Animations */
+  --animate-glow-pulse: glowPulse 3s ease-in-out infinite;
+  --animate-fade-in-up: fadeInUp 0.4s ease-out forwards;
+  --animate-float: float 4s ease-in-out infinite;
+
+  /* Keyframe definitions */
+  @keyframes glowPulse {
+    0%, 100% { opacity: 0.8; filter: drop-shadow(0 0 12px rgba(245, 158, 11, 0.4)); }
+    50% { opacity: 1; filter: drop-shadow(0 0 24px rgba(245, 158, 11, 0.8)); }
+  }
+
+  @keyframes fadeInUp {
+    0% { opacity: 0; transform: translateY(12px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-6px); }
+  }
+}
+
+/* Glassmorphism & Custom Scrollbar Utilities */
+.glass-card {
+  background: rgba(17, 24, 39, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glow-border-amber {
+  box-shadow: 0 0 15px -3px rgba(245, 158, 11, 0.25);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+/* Dark mode scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0B0F17;
+}
+::-webkit-scrollbar-thumb {
+  background: #1F293D;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #F59E0B;
+}

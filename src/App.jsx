@@ -1,8 +1,8 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+// import { useState } from 'react'
+// import heroImg from './assets/hero.png'
+// import reactLogo from './assets/react.svg'
+// import viteLogo from './assets/vite.svg'
+// import './App.css'
 
 // function App() {
 //   const [count, setCount] = useState(0)
@@ -120,15 +120,45 @@ import './App.css'
 // }
 
 // export default App
+import React, { useState } from 'react';
+import Sidebar from './components/Sidebar';
+import SlokaBanner from './components/SlokaBanner';
+import NotesVault from './components/NotesVault';
+import Analytics from './components/Analytics';
+import AIAssistant from './components/AiAssistant';
 
-function App() {
+
+export default function App() {
+  const [activeTab, setActiveTab] = useState('dashboard');
+
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <h1 className="text-4xl font-bold">
-        My React + Tailwind Project 🚀
-      </h1>
-    </div>
-  )
-}
+    <div className="flex min-h-screen bg-slate-950 text-slate-100">
+      {/* Navigation Sidebar */}
+      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
 
-export default App
+      {/* Main Workspace Area */}
+      <main className="flex-1 p-6 md:p-10 max-w-6xl mx-auto">
+        {/* Sloka Banner */}
+        <SlokaBanner />
+
+        {/* View Switcher */}
+        {activeTab === 'dashboard' && (
+          <div className="space-y-8">
+            <NotesVault />
+            <Analytics />
+          </div>
+        )}
+        {activeTab === 'notes' && <NotesVault />}
+        {activeTab === 'analytics' && <Analytics />}
+        {activeTab === 'ai' && <AiAssistant />}(
+          <div className="bg-slate-900 border border-slate-800 p-8 rounded-2xl text-center">
+            <h3 className="text-xl font-bold text-white mb-2">🤖 AI Assistant Module</h3>
+            <p className="text-slate-400 max-w-md mx-auto">
+              This module will connect to the Google Gemini API to summarize notes and generate practice flashcards.
+            </p>
+          </div>
+        )
+      </main>
+    </div>
+  );
+}
