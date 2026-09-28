@@ -1,119 +1,197 @@
-import React, { useState } from 'react';
-import { INITIAL_NOTES, INITIAL_VIDEOS } from '../data/mockData';
-import { Plus, Video, FileText, ExternalLink } from 'lucide-react';
+// 
+
+import React, { useState, useEffect } from 'react';
+import { Plus, Trash2, FileText, Tag } from 'lucide-react';
 
 export default function NotesVault() {
-  const [notes, setNotes] = useState(INITIAL_NOTES);
-  const [videos] = useState(INITIAL_VIDEOS);
-  const [title, setTitle] = useState('');
-  const [subject, setSubject] = useState('');
-  const [content, setContent] = useState('');
+  const [notes, setNotes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [newNote, setNewNote] = useState({ title: '', subject: 'General', content: '', tags: '' });
 
-  const handleAddNote = (e) => {
+  // 1. Fetch notes from backend on component mount
+  const fetchNotes = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/notes');
+      if (response.ok) {
+        const data = await response.json();
+        setNotes(data);
+      }
+    } catch (error) {
+      console.error('Error fetching notes:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotes();
+  }, []);
+
+  // 2. Add a new note to backend
+  const handleCreateNote = async (e) => {
     e.preventDefault();
-    if (!title || !content) return;
-    const newNote = {
-      id: Date.now().toString(),
-      title,
-      subject: subject || 'General',
-      content,
-      tags: ['Study'],
-      date: new Date().toISOString().split('T')[0]
-    };
-    setNotes([newNote, ...notes]);
-    setTitle('');
-    setSubject('');
-    setContent('');
+    if (!newNote.title || !newNote.content) return;
+
+    try {
+      const formattedTags = newNote.tags.split(',').map((tag) => tag.trim()).filter(Boolean);
+      const response = await fetch('http://localhost:5000/api/notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: newNote.title,
+          subject: newNote.subject,
+          content: newNote.content,
+          tags: formattedTags,
+        }),
+      });
+
+      if (response.ok) {
+        await fetchNotes(); // Refresh list from server
+        setNewNote({ title: '', subject: 'General', content: '', tags: '' });
+        setShowModal(false);
+      }
+    } catch (error) {
+      console.error('Error creating note:', error);
+    }
+  };
+
+  // 3. Delete a note from backend
+  const handleDeleteNote = async (id) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/notes/${id}`, {
+        method: 'DELETE',
+      });
+      if (response.ok) {
+        setNotes((prev) => prev.filter((note) => note._id !== id));
+      }
+    } catch (error) {
+      console.error('Error deleting note:', error);
+    }
   };
 
   return (
-    <div className="space-y-8">
-      {/* Note Creation Form */}
-      <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-sm">
-        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-          <Plus className="w-5 h-5 text-amber-500" /> Create New Note
-        </h3>
-        <form onSubmit={handleAddNote} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <input
-              type="text"
-              placeholder="Note Title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="bg-slate-950 border border-slate-800 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-500"
-            />
-            <input
-              type="text"
-              placeholder="Subject (e.g., Operating Systems)"
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              className="bg-slate-950 border border-slate-800 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-500"
-            />
-          </div>
-          <textarea
-            placeholder="Write your study notes here..."
-            rows="3"
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl p-4 text-sm focus:outline-none focus:border-amber-500"
-          ></textarea>
-          <button
-            type="submit"
-            className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-semibold px-6 py-2.5 rounded-xl text-sm transition-all"
-          >
-            Save Note
-          </button>
-        </form>
+    <div className="p-6 max-w-7xl mx-auto text-slate-100">
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-2xl font-bold">Notes Vault</h1>
+          <p className="text-slate-400 text-sm">Store, organize, and manage your study materials</p>
+        </div>
+        <button
+          onClick={() => setShowModal(true)}
+          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg transition"
+        >
+          <Plus className="w-4 h-4" /> Add Note
+        </button>
       </div>
 
-      {/* Notes Grid */}
-      <div>
-        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-          <FileText className="w-5 h-5 text-amber-500" /> Saved Study Notes
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {loading ? (
+        <div className="text-slate-400">Loading notes...</div>
+      ) : notes.length === 0 ? (
+        <div className="p-8 text-center border border-dashed border-slate-800 rounded-xl text-slate-500">
+          No notes found. Click "Add Note" to create your first note!
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {notes.map((note) => (
-            <div key={note.id} className="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
-              <div className="flex justify-between items-start mb-2">
-                <span className="text-xs bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2.5 py-1 rounded-md font-medium">
-                  {note.subject}
-                </span>
-                <span className="text-xs text-slate-500">{note.date}</span>
-              </div>
-              <h4 className="text-base font-semibold text-white mb-2">{note.title}</h4>
-              <p className="text-sm text-slate-400 line-clamp-3">{note.content}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Video Vault */}
-      <div>
-        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-          <Video className="w-5 h-5 text-amber-500" /> Practical Video Resources
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {videos.map((vid) => (
-            <div key={vid.id} className="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex justify-between items-center">
+            <div key={note._id} className="bg-slate-900 border border-slate-800 p-5 rounded-xl flex flex-col justify-between">
               <div>
-                <span className="text-xs text-slate-400">{vid.subject} • {vid.channel}</span>
-                <h4 className="text-sm font-semibold text-white mt-1">{vid.title}</h4>
+                <div className="flex justify-between items-start mb-2">
+                  <span className="text-xs px-2.5 py-1 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                    {note.subject}
+                  </span>
+                  <button
+                    onClick={() => handleDeleteNote(note._id)}
+                    className="text-slate-500 hover:text-red-400 transition"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+                <h3 className="font-semibold text-lg text-white mb-2">{note.title}</h3>
+                <p className="text-slate-400 text-sm line-clamp-3 mb-4">{note.content}</p>
               </div>
-              <a
-                href={vid.url}
-                target="_blank"
-                rel="noreferrer"
-                className="p-2.5 bg-slate-800 hover:bg-amber-500 hover:text-slate-950 text-slate-300 rounded-xl transition-all"
-              >
-                <ExternalLink className="w-4 h-4" />
-              </a>
+
+              {note.tags && note.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 pt-3 border-t border-slate-800">
+                  {note.tags.map((tag, idx) => (
+                    <span key={idx} className="text-xs text-slate-400 bg-slate-800 px-2 py-0.5 rounded flex items-center gap-1">
+                      <Tag className="w-3 h-3 text-slate-500" /> {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
         </div>
-      </div>
+      )}
+
+      {/* Modal for adding notes */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-md">
+            <h2 className="text-xl font-bold mb-4 text-white">Create New Note</h2>
+            <form onSubmit={handleCreateNote} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 mb-1">Title</label>
+                <input
+                  type="text"
+                  required
+                  value={newNote.title}
+                  onChange={(e) => setNewNote({ ...newNote, title: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white text-sm focus:outline-none focus:border-indigo-500"
+                  placeholder="e.g. Operating System Threads"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 mb-1">Subject</label>
+                <input
+                  type="text"
+                  value={newNote.subject}
+                  onChange={(e) => setNewNote({ ...newNote, subject: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white text-sm focus:outline-none focus:border-indigo-500"
+                  placeholder="e.g. Computer Science"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 mb-1">Content</label>
+                <textarea
+                  required
+                  rows={4}
+                  value={newNote.content}
+                  onChange={(e) => setNewNote({ ...newNote, content: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white text-sm focus:outline-none focus:border-indigo-500"
+                  placeholder="Type note details here..."
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 mb-1">Tags (comma separated)</label>
+                <input
+                  type="text"
+                  value={newNote.tags}
+                  onChange={(e) => setNewNote({ ...newNote, tags: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white text-sm focus:outline-none focus:border-indigo-500"
+                  placeholder="os, thread, concurrency"
+                />
+              </div>
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="px-4 py-2 rounded-lg text-slate-400 hover:text-white text-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-semibold"
+                >
+                  Save Note
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-<div className="glass-card animate-fade-in-up hover:border-amber-500/50 transition-all duration-300 p-5 rounded-2xl">
-  {/* Note Content */}
-</div>
