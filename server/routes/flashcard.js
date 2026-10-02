@@ -13,11 +13,19 @@ router.get('/', async (req, res) => {
   }
 });
 
-// POST new flashcards (supports array/bulk save)
+// POST new flashcards (bulk insert or single insert)
 router.post('/', async (req, res) => {
   try {
-    const { cards } = req.body;
-    const savedCards = await Flashcard.insertMany(cards);
+    const data = req.body;
+    let savedCards;
+
+    if (Array.isArray(data)) {
+      savedCards = await Flashcard.insertMany(data);
+    } else {
+      const newCard = new Flashcard(data);
+      savedCards = await newCard.save();
+    }
+
     res.status(201).json(savedCards);
   } catch (err) {
     res.status(400).json({ error: err.message });
